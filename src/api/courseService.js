@@ -28,8 +28,8 @@ export const deleteCourse = (courseId) => {
 
 // --- Student Course Methods ---
 export const getAvailableCourses = () => {
-  return http.get('/courses/available');
-};
+  return http.get('/enrollments/student/available-courses');
+};  
 
 export const getEnrolledCourses = () => {
   return http.get('/courses/student/enrolled');
@@ -84,4 +84,31 @@ export const getStudentModules = (courseId) => {
 
 export const getStudentModuleById = (moduleId) => {
     return http.get(`/modules/student/${moduleId}`);
+};
+
+
+// =============================================
+// ENROLLMENT ENDPOINTS (for Students)
+// =============================================
+
+export const unenrollFromCourse = (courseId) => {
+  // NOTE: Your EnrollmentController uses this path. The CourseController has a similar one.
+  // We'll use the more specific one from EnrollmentController.
+  return http.delete(`/enrollments/courses/${courseId}`);
+};
+
+// =============================================
+// PROGRESS ENDPOINTS (for Students)
+// =============================================
+
+export const getMyProgress = () => {
+  return http.get('/progress/student/my-progress');
+};
+
+export const markModuleComplete = (moduleId) => {
+  return http.post(`/progress/modules/${moduleId}/complete`);
+};
+
+export const unmarkModuleComplete = (moduleId) => {
+  return http.post(`/progress/modules/${moduleId}/uncomplete`);
 };
