@@ -30,8 +30,8 @@ export const useAuthStore = defineStore('auth', () => {
   const role = computed(() => (token.value ? extractRole(token.value) : null));
   
   const userName = computed(() => user.value?.name || 'User');
-  const isStudent = computed(() => role.value === 'STUDENT');
-  const isInstructor = computed(() => role.value === 'INSTRUCTOR');
+  const isStudent = computed(() => role.value === 'EMPLOYEE');
+  const isInstructor = computed(() => role.value === 'HR');
 
   // (NEW) Computed property to get user's initials
   const userInitials = computed(() => {
@@ -67,7 +67,8 @@ export const useAuthStore = defineStore('auth', () => {
       
       setAuthData(responseData.accessToken, responseData.user);
 
-      const targetRoute = role.value === 'INSTRUCTOR' ? { name: 'instructor' } : { name: 'student' };
+// In store/auth.js inside the doLogin function
+const targetRoute = role.value === 'HR' ? { name: 'instructor' } : { name: 'student' };
       router.replace(targetRoute);
 
     } catch (error) {
