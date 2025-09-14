@@ -6,15 +6,15 @@ import http from '@/api/http';
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     accessToken: localStorage.getItem('accessToken') || null,
-    role: localStorage.getItem('role') || null, // 'STUDENT' or 'INSTRUCTOR'
+    role: localStorage.getItem('role') || null, // 'EMPLOYEE' or 'HR'
     userEmail: null,
   }),
 
   getters: {
     isAuthenticated: state => !!state.accessToken && !isExpired(state.accessToken),
-    isStudent: state => state.role === 'STUDENT',
-    isInstructor: state => state.role === 'INSTRUCTOR',
-    token: state => state.accessToken, // <- expose token for axios requests
+    isEmployee: state => state.role === 'EMPLOYEE',
+    isHr: state => state.role === 'HR',
+    token: state => state.accessToken,
   },
 
   actions: {
@@ -39,8 +39,8 @@ export const useAuthStore = defineStore('auth', {
 
       this.setToken(token);
 
-      if (this.role === 'INSTRUCTOR') router.replace({ name: 'instructor' });
-      else router.replace({ name: 'student' });
+      if (this.role === 'HR') router.replace({ name: 'hr' });
+      else router.replace({ name: 'employee' });
     },
 
     async doSignup(payload) {

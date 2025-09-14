@@ -10,8 +10,8 @@
       />
       <select class="input" v-model="role" required>
         <option disabled value="">Select role</option>
-        <option value="STUDENT">Student</option>
-        <option value="INSTRUCTOR">Instructor</option>
+        <option value="EMPLOYEE">Employee</option>
+        <option value="HR"><Hr></Hr></option>
       </select>
     </div>
 

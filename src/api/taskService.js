@@ -4,16 +4,16 @@ import http from '@/api/http';
 // COURSE ENDPOINTS
 // =============================================
 
-// --- Instructor Course Methods ---
+// --- hr Course Methods ---
 export const createCourse = (courseData) => {
   return http.post('/courses', courseData);
 };
 
-export const getInstructorCourses = () => {
+export const getHrCourses = () => {
   return http.get('/courses/instructor/my-courses');
 };
 
-export const getInstructorCourseById = (courseId) => {
+export const getHrCourseById = (courseId) => {
     return http.get(`/courses/instructor/${courseId}`);
 };
 
@@ -44,17 +44,17 @@ export const enrollInCourse = (courseId) => {
 // MODULE ENDPOINTS
 // =============================================
 
-// --- Instructor Module Methods ---
+// --- Hr Module Methods ---
 export const createModule = (moduleData) => {
     return http.post('/modules', moduleData);
 };
 
-export const getInstructorModules = (courseId = null) => {
+export const getHrModules = (courseId = null) => {
     const params = courseId ? { courseId } : {};
     return http.get('/modules/instructor/my-modules', { params });
 };
 
-export const getInstructorModuleById = (moduleId) => {
+export const getHrModuleById = (moduleId) => {
     return http.get(`/modules/instructor/${moduleId}`);
 };
 
