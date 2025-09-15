@@ -1,95 +1,231 @@
 <template>
-  <div>
-    <h2>Employee Dashboard</h2>
-
-    <!-- Progress -->
-    <div class="card">
-      <h3>My Onboarding Progress</h3>
-      <div v-if="loading.progress">Loading progress...</div>
-      <div v-else-if="progress.length" class="progress-grid">
-        <div v-for="prog in progress" :key="prog.taskId" class="progress-card">
-          <strong>{{ prog.taskName }}</strong>
-          <p>{{ prog.completedModules }} / {{ prog.totalModules }} Modules Completed</p>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: prog.completionPercentage + '%' }"></div>
+  <AppLayout>
+    <div class="employee-dashboard">
+      <div class="container-fluid">
+        <!-- Welcome Header -->
+        <div class="row mb-4">
+          <div class="col-md-8">
+            <h2>Welcome, {{ employeeData.employeeName }}!</h2>
+            <p class="text-muted mb-0">
+              {{ employeeData.department }} • {{ employeeData.designation }}
+              <span class="ms-2">
+                <StatusBadge :status="employeeData.status" type="onboarding" />
+              </span>
+            </p>
           </div>
-          <span class="progress-percent">{{ prog.completionPercentage.toFixed(1) }}%</span>
+          <div class="col-md-4 text-end">
+            <button @click="refreshDashboard" class="btn btn-outline-primary">
+              <i class="fas fa-refresh me-2"></i>Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress Overview -->
+        <div class="row mb-4">
+          <div class="col-md-8">
+            <ProgressTracker
+              :completion-percentage="employeeData.completionPercentage"
+              :tasks="employeeData.pendingTasks.concat(employeeData.completedTasks)"
+              :documents="employeeData.documents"
+              :next-action="employeeData.nextAction"
+            />
+          </div>
+          <div class="col-md-4">
+            <div class="card bg-light">
+              <div class="card-body text-center">
+                <h6 class="card-subtitle mb-2 text-muted">Quick Stats</h6>
+                <div class="row">
+                  <div class="col-6">
+                    <div class="fw-bold text-primary">{{ completedTasksCount }}</div>
+                    <small class="text-muted">Tasks Done</small>
+                  </div>
+                  <div class="col-6">
+                    <div class="fw-bold text-success">{{ approvedDocsCount }}</div>
+                    <small class="text-muted">Docs Approved</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content Tabs -->
+        <div class="card">
+          <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs">
+              <li class="nav-item">
+                <a 
+                  class="nav-link" 
+                  :class="{ active: activeTab === 'tasks' }"
+                  @click="activeTab = 'tasks'"
+                  href="#"
+                >
+                  <i class="fas fa-tasks me-2"></i>
+                  My Tasks 
+                  <span v-if="pendingTasksCount > 0" class="badge bg-warning text-dark ms-2">
+                    {{ pendingTasksCount }}
+                  </span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a 
+                  class="nav-link" 
+                  :class="{ active: activeTab === 'documents' }"
+                  @click="activeTab = 'documents'"
+                  href="#"
+                >
+                  <i class="fas fa-file-alt me-2"></i>
+                  Documents
+                  <span v-if="rejectedDocsCount > 0" class="badge bg-danger ms-2">
+                    {{ rejectedDocsCount }}
+                  </span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a 
+                  class="nav-link" 
+                  :class="{ active: activeTab === 'profile' }"
+                  @click="activeTab = 'profile'"
+                  href="#"
+                >
+                  <i class="fas fa-user me-2"></i>Profile
+                </a>
+              </li>
+            </ul>
+          </div>
+          
+          <div class="card-body">
+            <!-- Tasks Tab -->
+            <div v-if="activeTab === 'tasks'">
+              <TaskList @task-completed="onTaskCompleted" ref="taskListComponent" />
+            </div>
+
+            <!-- Documents Tab -->
+            <div v-if="activeTab === 'documents'">
+              <div v-if="showDocumentUpload">
+                <DocumentUpload 
+                  @submitted="onDocumentsSubmitted"
+                  @cancel="showDocumentUpload = false"
+                />
+              </div>
+              <div v-else>
+                <DocumentStatus 
+                  @upload-documents="showDocumentUpload = true"
+                  @update-document="updateDocument"
+                  ref="documentStatusComponent"
+                />
+              </div>
+            </div>
+
+            <!-- Profile Tab -->
+            <div v-if="activeTab === 'profile'">
+              <EmployeeProfile :employee-data="employeeData" />
+            </div>
+          </div>
         </div>
       </div>
-      <p v-else>You don’t have onboarding tasks assigned yet.</p>
     </div>
-
-    <!-- Assigned Tasks -->
-    <div class="card" style="margin-top: 2rem;">
-      <h3>My Assigned Tasks</h3>
-      <div v-if="loading.assigned">Loading...</div>
-      <div v-else-if="tasks.length === 0">
-        <p>No tasks have been assigned yet.</p>
-      </div>
-      <ul v-else class="item-list">
-        <li v-for="task in tasks" :key="task.id">
-          <div>
-            <strong>{{ task.name }}</strong>
-            <p class="hr-name">Assigned by {{ task.hrName }}</p>
-          </div>
-          <div class="actions">
-            <button class="btn small primary" @click="viewModules(task.id)">View Modules</button>
-          </div>
-        </li>
-      </ul>
-    </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue';
-import { useRouter } from 'vue-router';
-import * as api from '@/api/taskService';
+import { ref, computed, onMounted } from 'vue'
+import AppLayout from '@/layouts/AppLayout.vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
+import ProgressTracker from '@/components/employee/ProgressTracker.vue'
+import TaskList from '@/components/employee/TaskList.vue'
+import DocumentUpload from '@/components/employee/DocumentUpload.vue'
+import DocumentStatus from '@/components/employee/DocumentStatus.vue'
+import EmployeeProfile from '@/components/employee/EmployeeProfile.vue'
+import employeeService from '@/api/employeeService.js'
 
-const router = useRouter();
+const activeTab = ref('tasks')
+const showDocumentUpload = ref(false)
+const employeeData = ref({
+  employeeName: '',
+  email: '',
+  department: '',
+  designation: '',
+  status: 'PENDING',
+  completionPercentage: 0,
+  pendingTasks: [],
+  completedTasks: [],
+  documents: [],
+  nextAction: ''
+})
 
-const tasks = ref([]);
-const progress = ref([]);
-const loading = reactive({ assigned: false, progress: false });
+// Component refs
+const taskListComponent = ref(null)
+const documentStatusComponent = ref(null)
 
-async function fetchData() {
-  loading.assigned = true;
-  loading.progress = true;
+// Computed properties
+const completedTasksCount = computed(() => employeeData.value.completedTasks?.length || 0)
+const pendingTasksCount = computed(() => employeeData.value.pendingTasks?.length || 0)
+const approvedDocsCount = computed(() => 
+  employeeData.value.documents?.filter(doc => doc.status === 'APPROVED').length || 0
+)
+const rejectedDocsCount = computed(() => 
+  employeeData.value.documents?.filter(doc => doc.status === 'REJECTED').length || 0
+)
+
+const loadDashboard = async () => {
   try {
-    const [tasksRes, progressRes] = await Promise.all([
-      api.getAssignedTasks(),
-      api.getMyProgress(),
-    ]);
-    tasks.value = Array.isArray(tasksRes.data.data) ? tasksRes.data.data : [];
-    progress.value = Array.isArray(progressRes.data.data) ? progressRes.data.data : [];
-  } catch (e) {
-    console.error('Failed to load employee dashboard:', e);
-  } finally {
-    loading.assigned = false;
-    loading.progress = false;
+    const response = await employeeService.getEmployeeDashboard()
+    employeeData.value = response.data.data || employeeData.value
+  } catch (error) {
+    console.error('Error loading dashboard:', error)
   }
 }
 
-function viewModules(taskId) {
-  router.push({ name: 'employee-task-view', params: { id: taskId } });
+const refreshDashboard = () => {
+  loadDashboard()
+  taskListComponent.value?.refresh()
+  documentStatusComponent.value?.refresh()
 }
 
-onMounted(fetchData);
+const onTaskCompleted = () => {
+  loadDashboard() // Refresh dashboard data
+}
+
+const onDocumentsSubmitted = () => {
+  showDocumentUpload.value = false
+  loadDashboard()
+  documentStatusComponent.value?.refresh()
+}
+
+const updateDocument = (document) => {
+  // Handle document update logic
+  console.log('Update document:', document)
+  showDocumentUpload.value = true
+}
+
+onMounted(() => {
+  loadDashboard()
+})
 </script>
 
 <style scoped>
-.item-list { list-style: none; padding: 0; margin: 0; }
-.item-list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #eee;
+.employee-dashboard {
+  padding: 20px;
 }
-.hr-name { margin-top: .25rem; font-size: .9em; color: #718096; }
-.progress-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
-.progress-card { border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; }
-.progress-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: .25rem; }
-.progress-fill { height: 100%; background: #4299e1; }
-.progress-percent { font-size: .8em; font-weight: 500; color: #718096; }
+
+.nav-tabs .nav-link {
+  border: none;
+  color: #6c757d;
+}
+
+.nav-tabs .nav-link.active {
+  background-color: #f8f9fa;
+  color: #007bff;
+  border-bottom: 2px solid #007bff;
+}
+
+.nav-tabs .nav-link:hover {
+  color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.fw-bold {
+  font-weight: 600;
+}
 </style>
