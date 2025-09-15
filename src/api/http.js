@@ -1,71 +1,73 @@
-import axios from 'axios';
-import { useAuthStore } from '@/store/auth';
+import axios from 'axios'
+import { getAuthToken, isTokenExpired, clearTokens } from '@/utils/jwt.js'
 
+// Create axios instance
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  withCredentials: true, // needed so the refresh cookie is sent
-});
+  baseURL: 'http://localhost:8080/api/v1',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+})
 
-let isRefreshing = false;
-let queue = [];
+// Request interceptor to add auth token
+http.interceptors.request.use(
+  (config) => {
+    const token = getAuthToken()
+    if (token && !isTokenExpired(token)) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
 
-function resolveQueue(error, token = null) {
-  queue.forEach(p => (error ? p.reject(error) : p.resolve(token)));
-  queue = [];
+// Response interceptor for error handling
+http.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      clearTokens()
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+const onSubmit = async () => {
+  if (loading.value) return
+  
+  loading.value = true
+  error.value = ''
+  
+  try {
+    console.log('📝 Form submitted, calling auth.login...')
+    
+    // ✅ Make sure this calls login, not logout
+    const result = await auth.login(credentials)
+    
+    console.log('📋 Login result:', result)
+    
+    if (result.success) {
+      // Redirect based on user role
+      if (auth.isHR) {
+        router.push('/hr')
+      } else if (auth.isEmployee) {
+        router.push('/employee')
+      } else {
+        router.push('/dashboard')
+      }
+    } else {
+      error.value = result.message || 'Login failed'
+    }
+  } catch (err) {
+    console.error('Login error:', err)
+    error.value = 'An error occurred during login'
+  } finally {
+    loading.value = false
+  }
 }
 
-// Attach token
-http.interceptors.request.use(config => {
-  const auth = useAuthStore();
-  if (auth.accessToken) {
-    config.headers.Authorization = `Bearer ${auth.accessToken}`;
-  }
-  return config;
-});
-
-// Handle 401 -> try /auth/refresh -> retry once
-http.interceptors.response.use(
-  res => res,
-  async error => {
-    const auth = useAuthStore();
-    const original = error.config;
-
-    if (error.response?.status === 401 && !original._retry) {
-      if (isRefreshing) {
-        // queue requests until refresh resolves
-        return new Promise((resolve, reject) => {
-          queue.push({ resolve, reject });
-        }).then(token => {
-          original.headers.Authorization = `Bearer ${token}`;
-          return http(original);
-        });
-      }
-
-      original._retry = true;
-      isRefreshing = true;
-
-      try {
-        const { data } = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
-        const newToken = data.accessToken || data.token || data.access_token;
-        auth.setToken(newToken);
-        resolveQueue(null, newToken);
-        original.headers.Authorization = `Bearer ${newToken}`;
-        return http(original);
-      } catch (e) {
-        resolveQueue(e, null);
-        auth.logout(true);
-        return Promise.reject(e);
-      } finally {
-        isRefreshing = false;
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
-
-export default http;
+export default http
