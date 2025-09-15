@@ -9,10 +9,10 @@
         required
       />
       <select class="input" v-model="role" required>
-        <option disabled value="">Select role</option>
-        <option value="EMPLOYEE">HR</option>
-        <option value="HR">EMPLOYEE</option>
-      </select>
+  <option disabled value="">Select role</option>
+  <option value="HR">HR</option>
+  <option value="EMPLOYEE">EMPLOYEE</option>
+</select>
     </div>
 
     <input
