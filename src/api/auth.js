@@ -30,8 +30,13 @@ export const useAuthStore = defineStore('auth', () => {
   const role = computed(() => (token.value ? extractRole(token.value) : null));
   
   const userName = computed(() => user.value?.name || 'User');
+<<<<<<< HEAD
   const isStudent = computed(() => role.value === 'EMPLOYEE');
   const isInstructor = computed(() => role.value === 'HR');
+=======
+  const isEmployee = computed(() => role.value === 'EMPLOYEE');
+  const isHr = computed(() => role.value === 'HR');
+>>>>>>> 2f8658de462103a8572ff4ad3ac6d85c86a24b8b
 
   // (NEW) Computed property to get user's initials
   const userInitials = computed(() => {
@@ -67,8 +72,12 @@ export const useAuthStore = defineStore('auth', () => {
       
       setAuthData(responseData.accessToken, responseData.user);
 
+<<<<<<< HEAD
 // In store/auth.js inside the doLogin function
 const targetRoute = role.value === 'HR' ? { name: 'instructor' } : { name: 'student' };
+=======
+      const targetRoute = role.value === 'HR' ? { name: 'hr' } : { name: 'employee' };
+>>>>>>> 2f8658de462103a8572ff4ad3ac6d85c86a24b8b
       router.replace(targetRoute);
 
     } catch (error) {
@@ -104,8 +113,8 @@ const targetRoute = role.value === 'HR' ? { name: 'instructor' } : { name: 'stud
     userInitials, // (NEW) Expose the initials
     isAuthenticated,
     role,
-    isStudent,
-    isInstructor,
+    isEmployee,
+    isHr,
     doLogin,
     doSignup,
     logout,

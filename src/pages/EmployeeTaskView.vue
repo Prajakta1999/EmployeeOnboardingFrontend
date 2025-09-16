@@ -37,7 +37,7 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
 import { useRoute } from 'vue-router';
-import * as api from '@/api/courseService';
+import * as api from '@/api/taskService';
 
 const route = useRoute();
 const courseId = route.params.id;
