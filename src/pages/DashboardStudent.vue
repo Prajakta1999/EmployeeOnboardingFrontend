@@ -1,320 +1,521 @@
-<!-- <template>
-  <div class="card">
-    <h2>Student Dashboard</h2>
-    <p>Welcome! This area is only for students.</p>
-  </div>
-</template>
-
-<script setup>
-// You can fetch student-only data here; axios will attach the bearer automatically.
-</script> -->
-
-
-<!-- <template>
-
-  <div>
-    <h2>Student Dashboard</h2>
-
-    <div class="card">
-        <h3>My Enrolled Courses</h3>
-        <div v-if="loading.enrolled">Loading...</div>
-        <div v-else-if="enrolledCourses.length === 0">
-            <p>You are not enrolled in any courses. Browse available courses below.</p>
-        </div>
-        <ul v-else class="item-list">
-            <li v-for="course in enrolledCourses" :key="course.id">
-                <div>
-                    <strong>{{ course.name }}</strong>
-                    <p style="margin:0.25rem 0 0 0;font-size:0.9em;">by {{ course.instructorName }}</p>
-                </div>
-                <button class="btn small">View Modules</button>
-            </li>
-        </ul>
-    </div>
-
-    <div class="card" style="margin-top: 2rem;">
-        <h3>Available Courses to Enroll</h3>
-        <div v-if="loading.available">Loading...</div>
-         <div v-else-if="availableCourses.length === 0">
-            <p>There are no courses available for enrollment at this time.</p>
-        </div>
-        <ul v-else class="item-list">
-            <li v-for="course in availableCourses" :key="course.id">
-                <div>
-                    <strong>{{ course.name }}</strong>
-                    <p style="margin:0.25rem 0 0 0;font-size:0.9em;">by {{ course.instructorName }}</p>
-                </div>
-                <button
-                  class="btn small primary"
-                  :disabled="loading.enrollAction"
-                  @click="handleEnroll(course.id)"
-                >
-                  Enroll
-                </button>
-            </li>
-        </ul>
-    </div>
-
-  </div>
-</template>
-
-<script setup>
-import { ref, onMounted, reactive } from 'vue';
-import * as courseService from '@/api/courseService';
-
-const availableCourses = ref([]);
-const enrolledCourses = ref([]);
-const loading = reactive({
-    available: false,
-    enrolled: false,
-    enrollAction: false,
-});
-
-async function fetchAllCourses() {
-    loading.available = true;
-    loading.enrolled = true;
-    try {
-        const [availableRes, enrolledRes] = await Promise.all([
-            courseService.getAvailableCourses(),
-            courseService.getEnrolledCourses()
-        ]);
-        availableCourses.value = availableRes.data;
-        enrolledCourses.value = enrolledRes.data;
-    } catch (error) {
-        console.error("Failed to fetch courses:", error);
-    } finally {
-        loading.available = false;
-        loading.enrolled = false;
-    }
-}
-
-async function handleEnroll(courseId) {
-    loading.enrollAction = true;
-    try {
-        await courseService.enrollInCourse(courseId);
-        // Refresh both lists after successful enrollment
-        await fetchAllCourses();
-    } catch (error) {
-        console.error("Failed to enroll in course:", error);
-        alert("Enrollment failed. You may already be enrolled or an error occurred.");
-    } finally {
-        loading.enrollAction = false;
-    }
-}
-
-onMounted(fetchAllCourses);
-</script>
-
-<style scoped>
-.item-list { list-style: none; padding: 0; margin: 0; }
-.item-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid #eee;
-}
-.item-list li:last-child { border-bottom: none; }
-</style> -->
-
 <template>
   <div>
-    <h2>Student Dashboard</h2>
+    <h2>Employee Dashboard</h2>
 
+    <!-- Progress Summary -->
     <div class="card">
-      <h3>My Progress Summary</h3>
-      <div v-if="loading.progress">Loading progress...</div>
-      <div v-else-if="progress.length" class="progress-grid">
-        <div v-for="prog in progress" :key="prog.courseId" class="progress-card">
-          <strong>{{ prog.courseName }}</strong>
-          <p>{{ prog.totalModulesCompleted }} / {{ prog.totalModulesAvailable }} Modules Completed</p>
+      <h3>My Onboarding Progress</h3>
+      <div v-if="loading.dashboard">Loading...</div>
+      <div v-else-if="dashboardData">
+        <div class="employee-info">
+          <h4>{{ dashboardData.employeeName }}</h4>
+          <p><strong>Email:</strong> {{ dashboardData.email }}</p>
+          <p><strong>Phone:</strong> {{ dashboardData.phoneNumber || 'N/A' }}</p>
+          <p><strong>Department:</strong> {{ dashboardData.department }}</p>
+          <p><strong>Designation:</strong> {{ dashboardData.designation }}</p>
+          <p><strong>Employee ID:</strong> {{ dashboardData.employeeIdNumber }}</p>
+          <p><strong>Status:</strong> <span :class="`status-${dashboardData.status?.toLowerCase()}`">{{ dashboardData.status }}</span></p>
+          <p><strong>Joining Date:</strong> {{ formatDate(dashboardData.joiningDate) }}</p>
+        </div>
+
+        <div class="progress-section">
           <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: prog.completionPercentage + '%' }"></div>
+            <div class="progress-fill" :style="{ width: dashboardData.completionPercentage + '%' }"></div>
           </div>
-          <span class="progress-percent">{{ prog.completionPercentage.toFixed(1) }}%</span>
+          <span class="progress-percent">{{ dashboardData.completionPercentage }}% Complete</span>
+          
+          <div v-if="dashboardData.nextAction" class="next-action">
+            <strong>Next Action:</strong> {{ dashboardData.nextAction }}
+          </div>
         </div>
       </div>
-      <p v-else>You have no progress to show yet. Enroll in a course to get started!</p>
+      <p v-else>Unable to load your onboarding information.</p>
     </div>
 
+    <!-- Pending Tasks -->
     <div class="card" style="margin-top: 2rem;">
-        <h3>My Enrolled Courses</h3>
-        <div v-if="loading.enrolled">Loading...</div>
-        <div v-else-if="enrolledCourses.length === 0">
-            <p>You are not enrolled in any courses. Browse available courses below.</p>
+      <h3>Pending Tasks ({{ dashboardData?.pendingTasks?.length || 0 }})</h3>
+      <div v-if="loading.tasks">Loading tasks...</div>
+      <div v-else-if="!dashboardData?.pendingTasks?.length">
+        <p>🎉 Great job! You have no pending tasks.</p>
+      </div>
+      <div v-else class="task-list">
+        <div v-for="task in dashboardData.pendingTasks" :key="task.taskId" class="task-card pending">
+          <div class="task-header">
+            <h4>{{ task.taskName }}</h4>
+            <span v-if="task.mandatory" class="mandatory">Mandatory</span>
+          </div>
+          <p>{{ task.description }}</p>
+          <div class="task-actions">
+            <button 
+              v-if="task.taskType === 'POLICY_ACKNOWLEDGMENT'"
+              class="btn small primary"
+              @click="completePolicyAcknowledgment(task.taskType)"
+            >
+              Acknowledge Policy
+            </button>
+            <button 
+              v-else-if="task.taskType === 'ORIENTATION_SESSION'"
+              class="btn small primary"
+              @click="confirmOrientation(task.taskType)"
+            >
+              Confirm Attendance
+            </button>
+            <button 
+              v-else-if="task.taskType === 'DOCUMENT_SUBMISSION'"
+              class="btn small primary"
+              @click="openDocumentSubmission"
+            >
+              Submit Documents
+            </button>
+            <button 
+              v-else
+              class="btn small primary"
+              @click="completeGenericTask(task.taskType)"
+            >
+              Mark Complete
+            </button>
+          </div>
         </div>
-        <ul v-else class="item-list">
-            <li v-for="course in enrolledCourses" :key="course.id">
-                <div>
-                    <strong>{{ course.name }}</strong>
-                    <p class="instructor-name">by {{ course.instructorName }}</p>
-                </div>
-                <div class="actions">
-                  <button class="btn small danger-outline" @click="handleUnenroll(course.id)">Unenroll</button>
-                  <button class="btn small primary" @click="viewCourseModules(course.id)">View Course</button>
-                </div>
-            </li>
-        </ul>
+      </div>
     </div>
 
+    <!-- Completed Tasks -->
     <div class="card" style="margin-top: 2rem;">
-        <h3>Available Courses to Enroll</h3>
-        <div v-if="loading.available">Loading...</div>
-         <div v-else-if="availableCourses.length === 0">
-            <p>There are no courses available for enrollment at this time.</p>
+      <h3>Completed Tasks ({{ dashboardData?.completedTasks?.length || 0 }})</h3>
+      <div v-if="loading.tasks">Loading tasks...</div>
+      <div v-else-if="!dashboardData?.completedTasks?.length">
+        <p>No tasks completed yet.</p>
+      </div>
+      <div v-else class="task-list">
+        <div v-for="task in dashboardData.completedTasks" :key="task.taskId" class="task-card completed">
+          <div class="task-header">
+            <h4>{{ task.taskName }}</h4>
+            <span class="completed-badge">✓ Completed</span>
+          </div>
+          <p>{{ task.description }}</p>
+          <p class="completion-date">Completed: {{ formatDateTime(task.completedAt) }}</p>
+          <p v-if="task.notes" class="task-notes">Notes: {{ task.notes }}</p>
         </div>
-        <ul v-else class="item-list">
-            <li v-for="course in availableCourses" :key="course.id">
-                <div>
-                    <strong>{{ course.name }}</strong>
-                    <p class="instructor-name">by {{ course.instructorName }}</p>
-                </div>
-                <button
-                  class="btn small primary"
-                  :disabled="loading.enrollAction"
-                  @click="handleEnroll(course.id)"
-                >
-                  Enroll
-                </button>
-            </li>
-        </ul>
+      </div>
+    </div>
+
+    <!-- Documents Status -->
+    <div class="card" style="margin-top: 2rem;">
+      <h3>My Documents ({{ dashboardData?.documents?.length || 0 }})</h3>
+      <div v-if="loading.documents">Loading documents...</div>
+      <div v-else-if="!dashboardData?.documents?.length">
+        <p>No documents submitted yet.</p>
+        <button class="btn primary" @click="openDocumentSubmission">Submit Documents</button>
+      </div>
+      <div v-else>
+        <div class="documents-grid">
+          <div v-for="doc in dashboardData.documents" :key="doc.documentId" class="document-card">
+            <h4>{{ doc.documentName }}</h4>
+            <p><strong>Type:</strong> {{ formatDocumentType(doc.documentType) }}</p>
+            <p><strong>Status:</strong> 
+              <span :class="`doc-status-${doc.status.toLowerCase().replace('_', '-')}`">
+                {{ formatDocumentStatus(doc.status) }}
+              </span>
+            </p>
+            <p v-if="doc.mandatory" class="mandatory-doc">Mandatory Document</p>
+            <p v-if="doc.submittedAt" class="submission-date">
+              Submitted: {{ formatDateTime(doc.submittedAt) }}
+            </p>
+            <p v-if="doc.reviewComments" class="review-comments">
+              <strong>Review Comments:</strong> {{ doc.reviewComments }}
+            </p>
+            <p v-if="doc.reviewedByName" class="reviewer">
+              Reviewed by: {{ doc.reviewedByName }}
+            </p>
+          </div>
+        </div>
+        <button class="btn primary" style="margin-top: 1rem;" @click="openDocumentSubmission">
+          Submit More Documents
+        </button>
+      </div>
+    </div>
+
+    <!-- Document Submission Modal -->
+    <div v-if="showDocumentModal" class="modal-backdrop" @click="closeDocumentModal">
+      <div class="modal" @click.stop>
+        <h3>Submit Documents</h3>
+        <form @submit.prevent="handleDocumentSubmission">
+          <div class="form-group">
+            <label>ID Proof URL: <span class="required">*</span></label>
+            <input v-model="documentForm.idProofUrl" type="url" required placeholder="Enter ID proof document URL">
+          </div>
+
+          <div class="form-group">
+            <label>PAN/Aadhar URL:</label>
+            <input v-model="documentForm.panAadharUrl" type="url" placeholder="Enter PAN/Aadhar document URL">
+          </div>
+
+          <div class="form-group">
+            <label>Bank Details URL:</label>
+            <input v-model="documentForm.bankDetailsUrl" type="url" placeholder="Enter bank details document URL">
+          </div>
+
+          <div class="form-group">
+            <label>Offer Letter URL: <span class="required">*</span></label>
+            <input v-model="documentForm.offerLetterUrl" type="url" required placeholder="Enter offer letter document URL">
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn" @click="closeDocumentModal">Cancel</button>
+            <button type="submit" class="btn primary" :disabled="loading.form">Submit Documents</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
-import { useRouter } from 'vue-router';
-import * as api from '@/api/courseService';
+import axios from 'axios';
+import { useAuthStore } from '@/store/auth';
 
-const router = useRouter();
+const auth = useAuthStore();
+const API_BASE = 'http://localhost:8080/api/v1';
 
-const availableCourses = ref([]);
-const enrolledCourses = ref([]);
-const progress = ref([]);
-
-const loading = reactive({
-    available: false,
-    enrolled: false,
-    enrollAction: false,
-    progress: false,
+// State
+const dashboardData = ref(null);
+const showDocumentModal = ref(false);
+const documentForm = reactive({
+  idProofUrl: '',
+  panAadharUrl: '',
+  bankDetailsUrl: '',
+  offerLetterUrl: ''
 });
 
-async function fetchData() {
-    loading.available = true;
-    loading.enrolled = true;
-    loading.progress = true;
-    try {
-        const [availableRes, enrolledRes, progressRes] = await Promise.all([
-            api.getAvailableCourses(),
-            api.getEnrolledCourses(),
-            api.getMyProgress(),
-        ]);
-        availableCourses.value = Array.isArray(availableRes.data.data) ? availableRes.data.data : [];
-        enrolledCourses.value = Array.isArray(enrolledRes.data.data) ? enrolledRes.data.data : [];
-        progress.value = Array.isArray(progressRes.data.data) ? progressRes.data.data : [];
+const loading = reactive({
+  dashboard: false,
+  tasks: false,
+  documents: false,
+  form: false
+});
 
-    } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-    } finally {
-        loading.available = false;
-        loading.enrolled = false;
-        loading.progress = false;
-    }
-}
-
-async function handleEnroll(courseId) {
-    loading.enrollAction = true;
-    try {
-        await api.enrollInCourse(courseId);
-        // Refresh all data after successful enrollment
-        await fetchData();
-    } catch (error) {
-        console.error("Failed to enroll in course:", error);
-        alert("Enrollment failed. You may already be enrolled or an error occurred.");
-    } finally {
-        loading.enrollAction = false;
-    }
-}
-
-async function handleUnenroll(courseId) {
-  if (confirm('Are you sure you want to unenroll from this course? Your progress will be lost.')) {
-    try {
-      await api.unenrollFromCourse(courseId);
-      await fetchData(); // Refresh all data
-    } catch (error) {
-      console.error('Failed to unenroll:', error);
-      alert('Failed to unenroll from the course.');
-    }
+// API calls
+async function fetchDashboard() {
+  loading.dashboard = true;
+  try {
+    const { data } = await axios.get(`${API_BASE}/employee/dashboard`, {
+      headers: { Authorization: `Bearer ${auth.accessToken}` }
+    });
+    dashboardData.value = data.data || data;
+  } catch (error) {
+    console.error('Failed to fetch dashboard:', error);
+  } finally {
+    loading.dashboard = false;
   }
 }
 
-function viewCourseModules(courseId) {
-  router.push({ name: 'student-course-view', params: { id: courseId } });
+// Task completion handlers - using CompleteTaskRequest DTO structure
+async function completePolicyAcknowledgment(taskType) {
+  try {
+    await axios.put(`${API_BASE}/employee/tasks/policy-acknowledgment`, {
+      taskType: taskType,
+      notes: 'Policy acknowledged by employee'
+    }, {
+      headers: { Authorization: `Bearer ${auth.accessToken}` }
+    });
+    await fetchDashboard();
+  } catch (error) {
+    console.error('Failed to complete policy acknowledgment:', error);
+    alert('Failed to complete task');
+  }
 }
 
-onMounted(fetchData);
+async function confirmOrientation(taskType) {
+  try {
+    await axios.put(`${API_BASE}/employee/tasks/orientation-confirmation`, {
+      taskType: taskType,
+      notes: 'Orientation attendance confirmed'
+    }, {
+      headers: { Authorization: `Bearer ${auth.accessToken}` }
+    });
+    await fetchDashboard();
+  } catch (error) {
+    console.error('Failed to confirm orientation:', error);
+    alert('Failed to complete task');
+  }
+}
+
+async function completeGenericTask(taskType) {
+  try {
+    await axios.put(`${API_BASE}/employee/onboarding/tasks/${taskType}/complete`, {
+      taskType: taskType,
+      notes: 'Task completed by employee'
+    }, {
+      headers: { Authorization: `Bearer ${auth.accessToken}` }
+    });
+    await fetchDashboard();
+  } catch (error) {
+    console.error('Failed to complete task:', error);
+    alert('Failed to complete task');
+  }
+}
+
+// Document handlers - using DocumentSubmissionRequest DTO structure
+function openDocumentSubmission() {
+  showDocumentModal.value = true;
+}
+
+function closeDocumentModal() {
+  showDocumentModal.value = false;
+  documentForm.idProofUrl = '';
+  documentForm.panAadharUrl = '';
+  documentForm.bankDetailsUrl = '';
+  documentForm.offerLetterUrl = '';
+}
+
+async function handleDocumentSubmission() {
+  loading.form = true;
+  try {
+    // Match exact DocumentSubmissionRequest DTO structure
+    const payload = {
+      idProofUrl: documentForm.idProofUrl,
+      offerLetterUrl: documentForm.offerLetterUrl
+    };
+
+    // Add optional fields if provided
+    if (documentForm.panAadharUrl) payload.panAadharUrl = documentForm.panAadharUrl;
+    if (documentForm.bankDetailsUrl) payload.bankDetailsUrl = documentForm.bankDetailsUrl;
+
+    await axios.put(`${API_BASE}/employee/documents`, payload, {
+      headers: { Authorization: `Bearer ${auth.accessToken}` }
+    });
+    
+    await fetchDashboard();
+    closeDocumentModal();
+  } catch (error) {
+    console.error('Failed to submit documents:', error);
+    console.error('Error response:', error.response?.data);
+    
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.data?.error || 
+                        error.message || 
+                        'Unknown error occurred';
+    
+    alert(`Failed to submit documents: ${errorMessage}`);
+  } finally {
+    loading.form = false;
+  }
+}
+
+// Utility functions
+function formatDate(dateString) {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString();
+}
+
+function formatDateTime(dateString) {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleString();
+}
+
+function formatDocumentType(type) {
+  return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function formatDocumentStatus(status) {
+  return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+}
+
+onMounted(fetchDashboard);
 </script>
 
 <style scoped>
-.item-list { list-style: none; padding: 0; margin: 0; }
-.item-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid #eee;
-}
-.item-list li:last-child { border-bottom: none; }
-.instructor-name {
-  margin:0.25rem 0 0 0;
-  font-size:0.9em;
-  color: #718096;
-}
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-.danger-outline {
-  background-color: transparent;
-  border: 1px solid #e53e3e;
-  color: #e53e3e;
-}
-.danger-outline:hover {
-  background-color: #e53e3e;
-  color: white;
-}
-.progress-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1.5rem;
-}
-.progress-card {
-  border: 1px solid #e2e8f0;
-  padding: 1rem;
+.employee-info {
+  background: #f8f9fa;
+  padding: 1.5rem;
   border-radius: 8px;
+  margin-bottom: 1.5rem;
 }
-.progress-card p {
-  font-size: 0.9em;
-  color: #718096;
-  margin: 0.5rem 0;
+
+.progress-section {
+  text-align: center;
 }
+
 .progress-bar {
   width: 100%;
-  height: 8px;
+  height: 12px;
   background-color: #e2e8f0;
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
-  margin-bottom: 0.25rem;
+  margin: 1rem 0 0.5rem 0;
 }
+
 .progress-fill {
   height: 100%;
-  background-color: #4299e1;
+  background: linear-gradient(90deg, #4299e1, #48bb78);
+  border-radius: 6px;
+}
+
+.progress-percent {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.next-action {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #e6fffa;
+  border: 1px solid #81e6d9;
+  border-radius: 6px;
+  color: #234e52;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.task-card {
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.task-card.pending {
+  background-color: #fff3cd;
+  border-left-color: #ffc107;
+}
+
+.task-card.completed {
+  background-color: #d4edda;
+  border-left-color: #28a745;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.task-header h4 {
+  margin: 0;
+}
+
+.mandatory {
+  padding: 0.2rem 0.6rem;
+  background: #dc3545;
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.completed-badge {
+  padding: 0.2rem 0.6rem;
+  background: #28a745;
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.task-actions {
+  margin-top: 1rem;
+}
+
+.completion-date, .task-notes {
+  font-size: 0.9em;
+  color: #6c757d;
+  margin: 0.25rem 0;
+}
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.document-card {
+  padding: 1.5rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.document-card h4 {
+  margin: 0 0 1rem 0;
+  color: #495057;
+}
+
+.doc-status-pending-review { color: #ffc107; font-weight: 500; }
+.doc-status-approved { color: #28a745; font-weight: 500; }
+.doc-status-rejected { color: #dc3545; font-weight: 500; }
+
+.mandatory-doc {
+  color: #dc3545;
+  font-weight: 500;
+  font-size: 0.9em;
+}
+
+.submission-date, .reviewer {
+  font-size: 0.85em;
+  color: #6c757d;
+}
+
+.review-comments {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #e9ecef;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.status-pending { color: #ffc107; font-weight: 500; }
+.status-in_progress { color: #17a2b8; font-weight: 500; }
+.status-completed { color: #28a745; font-weight: 500; }
+.status-pending_documents { color: #6f42c1; font-weight: 500; }
+
+.modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 100%;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.required {
+  color: #e53e3e;
+}
+
+.form-group select, .form-group input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
   border-radius: 4px;
 }
-.progress-percent {
-  font-size: 0.8em;
-  font-weight: 500;
-  color: #718096;
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
 }
 </style>
