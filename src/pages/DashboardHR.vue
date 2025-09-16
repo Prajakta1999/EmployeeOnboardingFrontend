@@ -85,9 +85,9 @@ import { ref, reactive, onMounted } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '@/store/auth';
 import * as api from '@/api/taskService';
-import TaskForm from '@/components/hr/TaskForm.vue';
-import ModuleList from '@/components/hr/ModuleList.vue';
-import OnboardingModuleForm from '@/components/hr/OnboardingModuleForm.vue';
+import TaskForm from '@/components/instructor/TaskForm.vue';
+import ModuleList from '@/components/instructor/ModuleList.vue';
+import OnboardingModuleForm from '@/components/instructor/OnboardingModuleForm.vue';
 
 const auth = useAuthStore();
 
