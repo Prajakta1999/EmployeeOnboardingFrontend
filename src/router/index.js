@@ -63,8 +63,8 @@ import { useAuthStore } from '@/store/auth';
 
 const LoginView = () => import('@/pages/LoginView.vue');
 const SignupView = () => import('@/pages/SignupView.vue');
-const DashboardStudent = () => import('@/pages/DashboardStudent.vue');
-const DashboardInstructor = () => import('@/pages/DashboardInstructor.vue');
+const DashboardStudent = () => import('@/pages/DashboardEmployee.vue');
+const DashboardInstructor = () => import('@/pages/DashboardHR.vue');
 const StudentCourseView = () => import('@/pages/StudentCourseView.vue');
 const NotFound = () => import('@/pages/NotFound.vue');
 
